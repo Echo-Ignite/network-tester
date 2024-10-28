@@ -35,7 +35,7 @@ urlregex = re.compile(
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
-def dohttp(http_input):
+def dohttp2(http_input):
   if re.match(urlregex, http_input) is None:
     st.error('Invalid URL')
   else:
@@ -49,6 +49,38 @@ def dohttp(http_input):
 
     st.code(stdout.decode('utf-8'), language='bash')
     st.write('Subprocess Returned:', process.returncode)
+
+def dohttp(http_input):
+    if re.match(urlregex, http_input) is None:
+        st.error('Invalid URL')
+    else:
+        st.info("Running curl with latency measurements")
+
+        # Run curl with timing details
+        process = subprocess.Popen(
+            [
+                'curl', '--silent', '--verbose',
+                '-w', (
+                "\nDNS Lookup: %{time_namelookup}s\n"
+                "TCP Connection: %{time_connect}s\n"
+                "SSL Handshake: %{time_appconnect}s\n"
+                "Redirect Time: %{time_redirect}s\n"
+                "Time to First Byte: %{time_starttransfer}s\n"
+                "Total Time: %{time_total}s\n"
+            ),
+                http_input
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+
+        stdout, stderr = process.communicate()
+
+        if stderr:
+            st.code(stderr.decode('utf-8'), language='bash')
+
+        st.code(stdout.decode('utf-8'), language='bash')
+        st.write('Subprocess Returned:', process.returncode)
 
 def parse_data(data, regex_expr):
     data_matches = re.findall(regex_expr, data)
